@@ -54,6 +54,10 @@ export class Graph<T> {
         });
         return graph;
     }
+
+    getNodes(): T[] {
+        return Array.from(this.outgoing.keys());
+    }
 }
 
 export class Edge<T> {

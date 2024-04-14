@@ -1,11 +1,11 @@
-export type QueueNode = {
-    value: string;
+export type QueueNode<T> = {
+    value: T;
     priority: number;
 };
 
-export class PriorityQueue {
-    private heap: QueueNode[];
-    private nodePositions: Map<string, number>;
+export class PriorityQueue<T> {
+    private heap: QueueNode<T>[];
+    private nodePositions: Map<T, number>;
 
     constructor() {
         this.heap = [];
@@ -30,13 +30,13 @@ export class PriorityQueue {
         this.nodePositions.set(this.heap[j].value, j);
     }
 
-    public insert(node: QueueNode): void {
+    public insert(node: QueueNode<T>): void {
         this.heap.push(node);
         this.nodePositions.set(node.value, this.heap.length - 1);
         this.bubbleUp(this.heap.length - 1);
     }
 
-    public extractMin(): QueueNode | null {
+    public extractMin(): QueueNode<T> | null {
         if (!this.heap.length) return null;
         if (this.heap.length === 1) {
             const min = this.heap.pop()!;
@@ -75,7 +75,7 @@ export class PriorityQueue {
         }
     }
 
-    public update(value: string, newPriority: number): void {
+    public update(value: T, newPriority: number): void {
         let index = this.nodePositions.get(value);
         if (index === undefined) return;
 
@@ -86,5 +86,8 @@ export class PriorityQueue {
         } else {
             this.bubbleDown(index);
         }
+    }
+    public get length(): number {
+        return this.heap.length;
     }
 }

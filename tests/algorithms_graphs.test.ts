@@ -111,4 +111,9 @@ describe('Graph', () => {
         expect(complexGraph.getOutgoingEdges('Y').length).toBe(1);
         expect(complexGraph.getIncomingEdges('Z').length).toBe(2);
     });
+    test('getNodes should return all nodes in the graph', () => {
+        graph.addEdge('A', 'B', 5);
+        graph.addEdge('B', 'C', 3);
+        expect(graph.getNodes()).toEqual(['A', 'B', 'C']);
+    });
 });
