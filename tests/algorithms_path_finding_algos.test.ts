@@ -38,6 +38,46 @@ describe('Graph Algorithms', () => {
     });
 });
 
+describe('Graph Algorithms Basic', () => {
+    let graph: Graph<string>;
+
+    beforeEach(() => {
+        // A simple graph: A -> B -> C
+        graph = new Graph<string>((node) => node);
+        graph.addEdge('A', 'B', 1);
+        graph.addEdge('B', 'A', 1);
+        graph.addEdge('B', 'C', 2);
+        graph.addEdge('C', 'B', 2);
+        graph.addEdge('B', 'D', 3);
+        graph.addEdge('D', 'B', 3);
+        graph.addEdge('B', 'F', 1);
+        graph.addEdge('F', 'B', 1);
+        graph.addEdge('F', 'D', 4);
+        graph.addEdge('D', 'F', 4);
+        graph.addEdge('D', 'H', 2);
+        graph.addEdge('H', 'D', 2);
+        graph.addEdge('F', 'G', 4);
+        graph.addEdge('G', 'F', 4);
+    });
+
+    describe('dijkstra', () => {
+        it('should find the shortest path from A to H', () => {
+            const path = dijkstra(graph, 'A', 'H');
+            expect(path).toEqual(['A', 'B', 'D', 'H']);
+        });
+    });
+
+    describe('A* Search', () => {
+        it('should find the shortest path from A to C', () => {
+            const heuristic = (a: string, b: string) => Math.abs(a.charCodeAt(0) - b.charCodeAt(0));
+            const path = aStarSearch(graph, 'A', 'H', heuristic);
+            expect(path).toEqual(['A', 'B', 'D', 'H']);
+        });
+
+    });
+});
+
+
 describe('Graph Algorithms with Numeric Nodes', () => {
     let graph: Graph<number>;
 
@@ -142,6 +182,102 @@ describe('Graph Algorithms with Points', () => {
             const heuristic = (a: Point, b: Point) => Point.distance(a, b);
             const path = aStarSearch(graph, p1, p4, heuristic);
             expect(path).toEqual([p1, p4]); // Should prefer the direct path even though there's an alternative via p3
+        });
+    });
+});
+
+describe('Graph Algorithms with Points - Additional Tests 1', () => {
+    let graph: Graph<Point>;
+
+
+    beforeEach(() => {
+        // Creating a graph with more complexity
+        graph = new Graph<Point>((point) => `${point.x},${point.y}`);
+        const p0 = new Point(0, 0);
+        const p1 = new Point(1, 0);
+        const p2 = new Point(2, 0);
+        const p3 = new Point(2, 1);
+        const p4 = new Point(1, 2);
+        const p5 = new Point(0, 2);
+
+        graph.addEdge(p0, p1, Point.distance(p0, p1));
+        graph.addEdge(p1, p2, Point.distance(p1, p2));
+        graph.addEdge(p2, p3, Point.distance(p2, p3));
+        graph.addEdge(p3, p4, Point.distance(p3, p4));
+        graph.addEdge(p4, p5, Point.distance(p4, p5));
+        graph.addEdge(p5, p0, Point.distance(p5, p0)); // Completing a loop
+    });
+
+    describe('A* Search - Complex Path', () => {
+        it('should find a complex path avoiding direct routes', () => {
+            const p0 = new Point(0, 0);
+            const p1 = new Point(1, 0);
+            const p2 = new Point(2, 0);
+            const p3 = new Point(2, 1);
+            const heuristic = (a: Point, b: Point) => Point.distance(a, b);
+            const path = aStarSearch(graph, p0, p3, heuristic);
+            expect(path).toEqual([p0, p1, p2, p3]); // Should traverse through p1, p2 to p3
+        });
+    });
+
+    describe('Dijkstra - Complex Path', () => {
+        it('should find a complex path avoiding direct routes', () => {
+            const p0 = new Point(0, 0);
+            const p1 = new Point(1, 0);
+            const p2 = new Point(2, 0);
+            const p3 = new Point(2, 1);
+            const path = dijkstra(graph, p0, p3);
+            expect(path).toEqual([p0, p1, p2, p3]); // Should traverse through p1, p2 to p3
+        });
+    });
+});
+
+describe('Graph Algorithms with Points - Additional Tests 2', () => {
+    let graph: Graph<Point>;
+
+    beforeEach(() => {
+        // Creating a graph with more complexity
+        graph = new Graph<Point>((point) => `${point.x},${point.y}`);
+        const p0 = new Point(0, 0);
+        const p1 = new Point(0, 1);
+        const p2 = new Point(1, 0);
+        const p3 = new Point(1, 1);
+        const p4 = new Point(2, 0);
+        const p5 = new Point(5, 5);
+        const p6 = new Point(9, 9);
+
+        graph.addEdge(p0, p1, Point.distance(p0, p1));
+        graph.addEdge(p1, p3, Point.distance(p1, p3));
+        graph.addEdge(p2, p3, Point.distance(p2, p3));
+        graph.addEdge(p1, p2, Point.distance(p1, p2));
+        graph.addEdge(p3, p4, Point.distance(p3, p4));
+        graph.addEdge(p4, p6, Point.distance(p4, p6));
+        graph.addEdge(p6, p5, Point.distance(p6, p5));
+        graph.addEdge(p4, p5, Point.distance(p4, p5));
+    });
+
+    describe('A* Search - Complex Path', () => {
+        it('should find a complex path avoiding direct routes', () => {
+            const p0 = new Point(0, 0);
+            const p1 = new Point(0, 1);
+            const p2 = new Point(1, 1);
+            const p3 = new Point(2, 0);
+            const p4 = new Point(5, 5);
+            const heuristic = (a: Point, b: Point) => Point.distance(a, b);
+            const path = aStarSearch(graph, p0, p4, heuristic);
+            expect(path).toEqual([p0, p1, p2, p3, p4]); // Should traverse through p1, p2 to p3
+        });
+    });
+
+    describe('Dijkstra - Complex Path', () => {
+        it('should find a complex path avoiding direct routes', () => {
+            const p0 = new Point(0, 0);
+            const p1 = new Point(0, 1);
+            const p2 = new Point(1, 1);
+            const p3 = new Point(2, 0);
+            const p4 = new Point(5, 5);
+            const path = dijkstra(graph, p0, p4);
+            expect(path).toEqual([p0, p1, p2, p3, p4]); // Should traverse through p1, p2 to p3
         });
     });
 });
