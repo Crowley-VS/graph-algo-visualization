@@ -90,4 +90,8 @@ export class PriorityQueue<T> {
     public get length(): number {
         return this.heap.length;
     }
+
+    public contains(value: T): boolean {
+        return this.nodePositions.has(value);
+    }
 }
