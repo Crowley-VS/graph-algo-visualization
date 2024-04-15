@@ -5,11 +5,17 @@ export type QueueNode<T> = {
 
 export class PriorityQueue<T> {
     private heap: QueueNode<T>[];
-    private nodePositions: Map<T, number>;
+    private nodePositions: Map<string, number>;
+    private hasher: (value: T) => string;
 
-    constructor() {
+    constructor(hasher: (value: T) => string) {
         this.heap = [];
         this.nodePositions = new Map();
+        this.hasher = hasher;
+    }
+
+    private hash(value: T): string {
+        return this.hasher(value);
     }
 
     private getParentIndex(i: number): number {
@@ -26,13 +32,13 @@ export class PriorityQueue<T> {
 
     private swap(i: number, j: number): void {
         [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
-        this.nodePositions.set(this.heap[i].value, i);
-        this.nodePositions.set(this.heap[j].value, j);
+        this.nodePositions.set(this.hash(this.heap[i].value), i);
+        this.nodePositions.set(this.hash(this.heap[j].value), j);
     }
 
     public insert(node: QueueNode<T>): void {
         this.heap.push(node);
-        this.nodePositions.set(node.value, this.heap.length - 1);
+        this.nodePositions.set(this.hash(node.value), this.heap.length - 1);
         this.bubbleUp(this.heap.length - 1);
     }
 
@@ -40,13 +46,13 @@ export class PriorityQueue<T> {
         if (!this.heap.length) return null;
         if (this.heap.length === 1) {
             const min = this.heap.pop()!;
-            this.nodePositions.delete(min.value);
+            this.nodePositions.delete(this.hash(min.value));
             return min;
         }
         const min = this.heap[0];
         this.heap[0] = this.heap.pop()!;
-        this.nodePositions.set(this.heap[0].value, 0);
-        this.nodePositions.delete(min.value);
+        this.nodePositions.set(this.hash(this.heap[0].value), 0);
+        this.nodePositions.delete(this.hash(min.value));
         this.bubbleDown(0);
         return min;
     }
@@ -76,7 +82,7 @@ export class PriorityQueue<T> {
     }
 
     public update(value: T, newPriority: number): void {
-        let index = this.nodePositions.get(value);
+        let index = this.nodePositions.get(this.hash(value));
         if (index === undefined) return;
 
         let oldPriority = this.heap[index].priority;
@@ -87,11 +93,12 @@ export class PriorityQueue<T> {
             this.bubbleDown(index);
         }
     }
+
     public get length(): number {
         return this.heap.length;
     }
 
     public contains(value: T): boolean {
-        return this.nodePositions.has(value);
+        return this.nodePositions.has(this.hash(value));
     }
 }

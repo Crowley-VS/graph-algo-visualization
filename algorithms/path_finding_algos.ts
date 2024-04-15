@@ -1,97 +1,105 @@
 import { Graph } from "./graph";
 import { PriorityQueue } from "./priority_queue";
 
-export function dijkstra<T>(graph: Graph<T>, source: T): Map<T, T | null> {
-    const distances = new Map<T, number>();
-    const predecessors = new Map<T, T | null>();
-    const priorityQueue = new PriorityQueue<T>();
+// Function to execute Dijkstra's algorithm
+export function dijkstra<T>(graph: Graph<T>, source: T, target: T): T[] {
+    const hasher = graph.getHashFunction();
+    const distances = new Map<string, number>();
+    const predecessors = new Map<string, T | null>();
+    const priorityQueue = new PriorityQueue<T>(hasher);
 
     // Initialize all distances to infinity, except the source which is 0
     graph.getNodes().forEach(node => {
-        distances.set(node, Infinity);
-        predecessors.set(node, null);
+        const hash = hasher(node);
+        distances.set(hash, Infinity);
+        predecessors.set(hash, null);
         priorityQueue.insert({ value: node, priority: Infinity });
     });
-    distances.set(source, 0);
+    distances.set(hasher(source), 0);
     priorityQueue.update(source, 0);
 
     while (priorityQueue.length > 0) {
         const origin = priorityQueue.extractMin();
-        if (!origin) break; // If the queue is empty or all remaining nodes are unreachable
+        if (!origin) break;
 
-        const originDist = distances.get(origin.value) ?? Infinity;
+        const originHash = hasher(origin.value);
+        const originDist = distances.get(originHash) ?? Infinity;
 
         // Process each adjacent vertex
         graph.getOutgoingEdges(origin.value).forEach(edge => {
-            const neighbor = edge.destination;
+            const neighborHash = hasher(edge.destination);
             const weight = edge.weight;
             const distThroughOrigin = originDist + weight;
 
-            if (distThroughOrigin < (distances.get(neighbor) ?? Infinity)) {
-                distances.set(neighbor, distThroughOrigin);
-                predecessors.set(neighbor, origin.value);
-                priorityQueue.update(neighbor, distThroughOrigin);
+            if (distThroughOrigin < (distances.get(neighborHash) ?? Infinity)) {
+                distances.set(neighborHash, distThroughOrigin);
+                predecessors.set(neighborHash, origin.value);
+                priorityQueue.update(edge.destination, distThroughOrigin);
             }
         });
     }
 
-    return predecessors;
+    return reconstructPath(predecessors, target, hasher);
 }
 
+// Function for A* Search
 export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a: T, b: T) => number): T[] | null {
-    const openSet = new PriorityQueue<T>();
-    const cameFrom: Map<T, T> = new Map();
-
-    const gScore: Map<T, number> = new Map(); // Cost from start along best known path.
-    const fScore: Map<T, number> = new Map(); // Estimated total cost from start to goal through y.
+    const hasher = graph.getHashFunction();
+    const openSet = new PriorityQueue<T>(hasher);
+    const cameFrom = new Map<string, T>();
+    const gScore = new Map<string, number>();
+    const fScore = new Map<string, number>();
 
     // Initialize scores for all nodes to Infinity, except the start node
-    for (const node of graph.getNodes()) {
-        gScore.set(node, Infinity);
-        fScore.set(node, Infinity);
-    }
+    graph.getNodes().forEach(node => {
+        const hash = hasher(node);
+        gScore.set(hash, Infinity);
+        fScore.set(hash, Infinity);
+    });
 
-    // Set the start node scores
-    gScore.set(start, 0);
-    fScore.set(start, heuristic(start, goal));
+    const startHash = hasher(start);
+    const goalHash = hasher(goal);
+    gScore.set(startHash, 0);
+    fScore.set(startHash, heuristic(start, goal));
 
-    openSet.insert({ value: start, priority: fScore.get(start)! });
+    openSet.insert({ value: start, priority: fScore.get(startHash)! });
 
     while (openSet.length > 0) {
         const current = openSet.extractMin()!.value;
+        const currentHash = hasher(current);
 
-        if (current === goal) {
-            return reconstructPath(cameFrom, current);
+        if (currentHash === goalHash) {
+            return reconstructPath(cameFrom, current, hasher);
         }
 
         graph.getOutgoingEdges(current).forEach(edge => {
-            const neighbor = edge.destination;
-            const tentative_gScore = gScore.get(current)! + edge.weight;
-            if (tentative_gScore < gScore.get(neighbor)!) {
-                cameFrom.set(neighbor, current);
-                gScore.set(neighbor, tentative_gScore);
-                fScore.set(neighbor, tentative_gScore + heuristic(neighbor, goal));
-                if (!openSet.contains(neighbor)) {
-                    openSet.insert({ value: neighbor, priority: fScore.get(neighbor)! });
+            const neighborHash = hasher(edge.destination);
+            const tentative_gScore = gScore.get(currentHash)! + edge.weight;
+            if (tentative_gScore < (gScore.get(neighborHash) ?? Infinity)) {
+                cameFrom.set(neighborHash, current);
+                gScore.set(neighborHash, tentative_gScore);
+                fScore.set(neighborHash, tentative_gScore + heuristic(edge.destination, goal));
+                if (!openSet.contains(edge.destination)) {
+                    openSet.insert({ value: edge.destination, priority: fScore.get(neighborHash)! });
                 }
             }
         });
     }
 
-    return null; // Return null if no path is found
+    return null;
 }
 
-export function reconstructPath<T>(predecessors: Map<T, T | null>, target: T): T[] {
-    const path: T[] = [];  // Explicitly typed as an array of T
+// Function to reconstruct paths using hash keys
+export function reconstructPath<T>(predecessors: Map<string, T | null>, target: T, hasher: (value: T) => string): T[] {
+    const path: T[] = [];
     let step: T | null = target;
-
-    if (!predecessors.has(step)) return path; // No path to target or target does not exist in the map
+    let stepHash = hasher(step);
 
     while (step !== null) {
         path.push(step);
-        step = predecessors.get(step) || null;
+        step = predecessors.get(stepHash) || null;
+        stepHash = step ? hasher(step) : '';
     }
 
     return path.reverse();
 }
-

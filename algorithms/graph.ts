@@ -86,6 +86,11 @@ export class Graph<T> {
     getNodes(): T[] {
         return Array.from(this.hashToNodeMap.values());  // Return actual nodes
     }
+
+    // Method to expose the hasher
+    public getHashFunction(): (value: T) => string {
+        return this.hasher;
+    }
 }
 
 export class Edge<T> {

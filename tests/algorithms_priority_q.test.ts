@@ -5,10 +5,12 @@ describe('PriorityQueue', () => {
     let pqNum: PriorityQueue<number>;
 
     beforeEach(() => {
-        pq = new PriorityQueue<string>();
-        pqNum = new PriorityQueue<number>();
-    });
+        // Initializing the priority queue for strings with a simple string hasher
+        pq = new PriorityQueue<string>((value: string) => value);
 
+        // Initializing the priority queue for numbers where numbers are converted to strings
+        pqNum = new PriorityQueue<number>((value: number) => value.toString());
+    });
     test('should start empty', () => {
         expect(pq.extractMin()).toBeNull();
     });
