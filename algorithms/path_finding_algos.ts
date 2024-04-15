@@ -89,17 +89,23 @@ export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a
     return null;
 }
 
-// Function to reconstruct paths using hash keys
 export function reconstructPath<T>(predecessors: Map<string, T | null>, target: T, hasher: (value: T) => string): T[] {
     const path: T[] = [];
-    let step: T | null = target;
-    let stepHash = hasher(step);
+    let current: T | null = target;
+    let currentHash = hasher(current);
 
-    while (step !== null) {
-        path.push(step);
-        step = predecessors.get(stepHash) || null;
-        stepHash = step ? hasher(step) : '';
+    // Check if the target was ever reached; if not, return an empty array
+    if (!predecessors.has(currentHash)) {
+        return path;
+    }
+
+    // Build the path by traversing the predecessors map
+    while (current !== null) {
+        path.push(current);
+        current = predecessors.get(currentHash) || null;
+        currentHash = current ? hasher(current) : '';
     }
 
     return path.reverse();
 }
+
