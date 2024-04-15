@@ -38,6 +38,49 @@ export function dijkstra<T>(graph: Graph<T>, source: T): Map<T, T | null> {
     return predecessors;
 }
 
+export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a: T, b: T) => number): T[] | null {
+    const openSet = new PriorityQueue<T>();
+    const cameFrom: Map<T, T> = new Map();
+
+    const gScore: Map<T, number> = new Map(); // Cost from start along best known path.
+    const fScore: Map<T, number> = new Map(); // Estimated total cost from start to goal through y.
+
+    // Initialize scores for all nodes to Infinity, except the start node
+    for (const node of graph.getNodes()) {
+        gScore.set(node, Infinity);
+        fScore.set(node, Infinity);
+    }
+
+    // Set the start node scores
+    gScore.set(start, 0);
+    fScore.set(start, heuristic(start, goal));
+
+    openSet.insert({ value: start, priority: fScore.get(start)! });
+
+    while (openSet.length > 0) {
+        const current = openSet.extractMin()!.value;
+
+        if (current === goal) {
+            return reconstructPath(cameFrom, current);
+        }
+
+        graph.getOutgoingEdges(current).forEach(edge => {
+            const neighbor = edge.destination;
+            const tentative_gScore = gScore.get(current)! + edge.weight;
+            if (tentative_gScore < gScore.get(neighbor)!) {
+                cameFrom.set(neighbor, current);
+                gScore.set(neighbor, tentative_gScore);
+                fScore.set(neighbor, tentative_gScore + heuristic(neighbor, goal));
+                if (!openSet.contains(neighbor)) {
+                    openSet.insert({ value: neighbor, priority: fScore.get(neighbor)! });
+                }
+            }
+        });
+    }
+
+    return null; // Return null if no path is found
+}
+
 export function reconstructPath<T>(predecessors: Map<T, T | null>, target: T): T[] {
     const path: T[] = [];  // Explicitly typed as an array of T
     let step: T | null = target;

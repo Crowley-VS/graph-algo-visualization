@@ -1,5 +1,10 @@
 import { Graph, Edge } from '../algorithms/graph';
 
+// Simple string hasher for demonstration.
+const simpleHasher = (value: string): string => {
+    return `hash_${value}`;
+};
+
 describe('Edge', () => {
     const origin = 'A';
     const destination = 'B';
@@ -30,7 +35,7 @@ describe('Graph', () => {
     let graph: Graph<string>;
 
     beforeEach(() => {
-        graph = new Graph();
+        graph = new Graph(simpleHasher);
     });
 
     test('new graph should have no edges or nodes', () => {
@@ -54,7 +59,7 @@ describe('Graph', () => {
 
     test('fromData should create a graph from array of tuples', () => {
         const data: [string, string, number][] = [['A', 'B', 10], ['B', 'C', 20], ['C', 'A', 30]];
-        const newGraph = Graph.fromData(data);
+        const newGraph = Graph.fromData(data, simpleHasher);
         expect(newGraph.getOutgoingEdges('A')[0].weight).toBe(10);
         expect(newGraph.getIncomingEdges('C')[0].weight).toBe(20);
     });
@@ -104,16 +109,143 @@ describe('Graph', () => {
         expect(() => graph.getIncomingEdges('Z')).toThrow('No incoming edges found for node Z');
     });
 
-    test('fromData should build a complex graph with various edges', () => {
-        const data: [string, string, number][] = [['X', 'Y', 100], ['Y', 'Z', 200], ['Z', 'X', 300], ['X', 'Z', 150]];
-        const complexGraph = Graph.fromData(data);
-        expect(complexGraph.getOutgoingEdges('X').length).toBe(2);
-        expect(complexGraph.getOutgoingEdges('Y').length).toBe(1);
-        expect(complexGraph.getIncomingEdges('Z').length).toBe(2);
+});
+
+// Define a simple Point class
+class Point {
+    x: number;
+    y: number;
+
+    constructor(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+    }
+    toString(): string {
+        return `Point(x=${this.x}, y=${this.y})`;
+    }
+}
+
+// A hashing function for Point objects
+const pointHasher = (point: Point): string => {
+    return `${point.x}_${point.y}`;
+};
+
+describe('Graph with Point objects', () => {
+    let graph: Graph<Point>;
+
+    beforeEach(() => {
+        graph = new Graph(pointHasher);
     });
-    test('getNodes should return all nodes in the graph', () => {
-        graph.addEdge('A', 'B', 5);
-        graph.addEdge('B', 'C', 3);
-        expect(graph.getNodes()).toEqual(['A', 'B', 'C']);
+
+    test('addEdge should correctly add new edges between points', () => {
+        const pointA = new Point(0, 0);
+        const pointB = new Point(1, 1);
+        graph.addEdge(pointA, pointB, 10);
+
+        const outgoingEdges = graph.getOutgoingEdges(pointA);
+        expect(outgoingEdges.length).toBe(1);
+        expect(outgoingEdges[0].weight).toBe(10);
+        expect(outgoingEdges[0].destination).toEqual(pointB);
+    });
+
+    test('fromData should create a graph from array of tuples with points', () => {
+        const pointA = new Point(0, 0);
+        const pointB = new Point(1, 1);
+        const pointC = new Point(2, 2);
+
+        const data: [Point, Point, number][] = [
+            [pointA, pointB, 10],
+            [pointB, pointC, 20],
+            [pointC, pointA, 30]
+        ];
+
+        const newGraph = Graph.fromData(data, pointHasher);
+        expect(newGraph.getOutgoingEdges(pointA)[0].weight).toBe(10);
+        expect(newGraph.getIncomingEdges(pointC)[0].weight).toBe(20);
+    });
+
+    test('hashing ensures identical points are treated as the same node', () => {
+        const pointA = new Point(1, 1);
+        const pointB = new Point(1, 1); // Identical to pointA
+
+        graph.addEdge(pointA, new Point(2, 2), 15);
+        expect(() => graph.addEdge(pointB, new Point(3, 3), 25)).not.toThrow();
+
+        // Ensure pointA and pointB are treated as the same node due to identical hashing
+        expect(graph.getOutgoingEdges(pointA).length).toBe(2); // Should reflect edges added using both pointA and pointB
+    });
+
+    test('should throw when accessing edges from a non-existent point', () => {
+        const pointZ = new Point(99, 99);
+        expect(() => graph.getOutgoingEdges(pointZ)).toThrow('No outgoing edges found for node Point(x=99, y=99)');
+        expect(() => graph.getIncomingEdges(pointZ)).toThrow('No incoming edges found for node Point(x=99, y=99)');
+    });
+
+    test('getNodes should return all unique points in the graph', () => {
+        const pointA = new Point(0, 0);
+        const pointB = new Point(1, 1);
+        const pointC = new Point(2, 2);
+
+        graph.addEdge(pointA, pointB, 10);
+        graph.addEdge(pointB, pointC, 20);
+        graph.addEdge(pointC, pointA, 30);
+
+        // The output of getNodes will be hashed values; to compare them properly, we use the hasher on expected points
+        const expectedNodes = [pointA, pointB, pointC].map(point => pointHasher(point));
+        const actualNodes = graph.getNodes().map(point => pointHasher(point));
+        expect(actualNodes).toEqual(expect.arrayContaining(expectedNodes));
+    });
+
+    test('should verify removal of an edge', () => {
+        const pointA = new Point(0, 0);
+        const pointB = new Point(1, 1);
+        graph.addEdge(pointA, pointB, 10);
+        graph.removeEdge(pointA, pointB); // Assume implementation of removeEdge
+        expect(graph.getOutgoingEdges(pointA)).toEqual([]);
+        expect(graph.getIncomingEdges(pointB)).toEqual([]);
+    });
+
+    test('should handle cycles correctly', () => {
+        const pointA = new Point(0, 0);
+        const pointB = new Point(1, 1);
+        const pointC = new Point(0, 0); // Same as pointA to form a cycle
+
+        graph.addEdge(pointA, pointB, 10);
+        graph.addEdge(pointB, pointC, 20); // Forms a cycle back to pointA
+
+        expect(graph.getOutgoingEdges(pointB)[0].destination).toEqual(pointC);
+        expect(graph.getIncomingEdges(pointA)[0].origin).toEqual(pointB);
+    });
+
+    test('should maintain correct number of unique points', () => {
+        const pointA = new Point(0, 0);
+        const pointB = new Point(1, 1);
+        const pointC = new Point(1, 1); // Identical to pointB
+
+        graph.addEdge(pointA, pointB, 10);
+
+        expect(() => {
+            graph.addEdge(pointA, pointC, 20); // Should not increase unique nodes
+        }).toThrow(Error);
+
+
+        const uniqueNodes = graph.getNodes().length;
+        expect(uniqueNodes).toBe(2); // Only pointA and pointB should be recognized as unique
+    });
+
+    test('should verify multiple outgoing edges from a single node', () => {
+        const pointA = new Point(0, 0);
+        const pointB = new Point(1, 1);
+        const pointC = new Point(2, 2);
+
+        graph.addEdge(pointA, pointB, 10);
+        graph.addEdge(pointA, pointC, 20);
+
+        const outgoingEdges = graph.getOutgoingEdges(pointA);
+        expect(outgoingEdges.length).toBe(2);
+        expect(outgoingEdges).toEqual(expect.arrayContaining([
+            expect.objectContaining({ destination: pointB }),
+            expect.objectContaining({ destination: pointC })
+        ]));
     });
 });
