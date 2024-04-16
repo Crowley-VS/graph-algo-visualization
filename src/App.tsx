@@ -1,24 +1,25 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { ForceDirectedGraph } from './GraphVisualization'; // Adjust the import path as needed
+import { Graph, Edge } from './algorithms/graph'; // Adjust the import path as needed
+import { D3Graph } from './algorithms/graph_d3'; // Adjust the import path as needed
 
 function App() {
+  // Create a Graph instance
+  const graph = new Graph<string>((node) => node);
+
+  // Add some nodes and edges to the graph
+  graph.addEdge('A', 'B', 1);
+  graph.addEdge('B', 'A', 1);
+  graph.addEdge('B', 'C', 2);
+  graph.addEdge('C', 'B', 2);
+  graph.addEdge('B', 'D', 3);
+
+  // Create a D3Graph instance
+  const d3Graph = new D3Graph(graph);
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <ForceDirectedGraph graph={d3Graph} />
     </div>
   );
 }
