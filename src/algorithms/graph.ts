@@ -91,6 +91,16 @@ export class Graph<T> {
     public getHashFunction(): (value: T) => string {
         return this.hasher;
     }
+
+    getEdges = (): Edge<T>[] => {
+        const edges: Edge<T>[] = [];
+        this.outgoing.forEach((outgoingEdges) => {
+            outgoingEdges.forEach((edge) => {
+                edges.push(edge);
+            });
+        });
+        return edges;
+    }
 }
 
 export class Edge<T> {

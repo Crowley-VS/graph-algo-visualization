@@ -249,3 +249,22 @@ describe('Graph with Point objects', () => {
         ]));
     });
 });
+
+describe('Graph', () => {
+    it('should correctly get all edges', () => {
+        const hasher = (value: number) => value.toString();
+        const graph = new Graph<number>(hasher);
+
+        graph.addEdge(1, 2, 3);
+        graph.addEdge(2, 3, 4);
+        graph.addEdge(3, 4, 5);
+
+        const edges = graph.getEdges();
+
+        expect(edges).toEqual([
+            new Edge(1, 2, 3),
+            new Edge(2, 3, 4),
+            new Edge(3, 4, 5),
+        ]);
+    });
+});
