@@ -87,6 +87,20 @@ export class Graph<T> {
         return Array.from(this.hashToNodeMap.values());  // Return actual nodes
     }
 
+    getHashes(): string[] {
+        return Array.from(this.hashToNodeMap.keys());  // Return hashes
+    }
+
+    getEdges(): Edge<T>[] {
+        let edges: Edge<T>[] = [];
+        this.outgoing.forEach((outgoingEdges) => {
+            outgoingEdges.forEach((edge) => {
+                edges.push(edge);
+            });
+        });
+        return edges;
+    }
+
     // Method to expose the hasher
     public getHashFunction(): (value: T) => string {
         return this.hasher;
