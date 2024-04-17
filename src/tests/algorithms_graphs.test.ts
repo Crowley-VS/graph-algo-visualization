@@ -268,3 +268,62 @@ describe('Graph', () => {
         ]);
     });
 });
+
+describe('Graph class', () => {
+    let graph: Graph<number>;
+    const hasher = (value: number) => value.toString(); // Define a simple hasher for testing purposes
+
+    beforeEach(() => {
+        graph = new Graph(hasher);
+    });
+
+    describe('addNode and getNodes methods', () => {
+        it('should add a node and retrieve nodes correctly', () => {
+            graph.addNode(1);
+            expect(graph.getNodes()).toEqual([1]);
+        });
+
+        it('should handle adding multiple unique nodes', () => {
+            graph.addNode(1);
+            graph.addNode(2);
+            expect(graph.getNodes()).toEqual([1, 2]);
+        });
+
+        it('should not add the same node twice', () => {
+            graph.addNode(1);
+            graph.addNode(1);
+            expect(graph.getNodes()).toEqual([1]);
+        });
+    });
+
+    describe('addNodesFromData method', () => {
+        it('should add multiple nodes from data array', () => {
+            graph.addNodesFromData([1, 2, 3]);
+            expect(graph.getNodes()).toEqual([1, 2, 3]);
+        });
+    });
+
+    describe('addEdgesFromData method', () => {
+        it('should add multiple edges from data array', () => {
+            graph.addNodesFromData([1, 2, 3]);
+            graph.addEdgesFromData([
+                [1, 2, 10],
+                [2, 3, 20],
+                [3, 1, 30]
+            ]);
+
+            expect(graph.getOutgoingEdges(1)).toEqual([new Edge(1, 2, 10)]);
+            expect(graph.getOutgoingEdges(2)).toEqual([new Edge(2, 3, 20)]);
+            expect(graph.getOutgoingEdges(3)).toEqual([new Edge(3, 1, 30)]);
+        });
+
+        it('should throw an error if an edge between the same nodes is added twice', () => {
+            graph.addNodesFromData([1, 2]);
+            graph.addEdge(1, 2, 10);
+
+            expect(() => {
+                graph.addEdgesFromData([[1, 2, 20]]);
+            }).toThrow('Edge already exists from 1 to 2');
+        });
+    });
+});
