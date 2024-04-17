@@ -8,12 +8,13 @@ export const ForceDirectedGraph = ({ graph }: { graph: D3GraphPoint }) => {
     useEffect(() => {
         if (ref.current) {
             const svg = d3.select(ref.current);
+            svg.selectAll('*').remove();
             const links = graph.getLinks();
             const nodes = graph.getNodes();
 
             const simulation = d3.forceSimulation(nodes)
-                .force('link', d3.forceLink(links).id((d: any) => d.id))
-                .force('charge', d3.forceManyBody())
+                .force('link', d3.forceLink(links).id((d: any) => d.id).strength(0))
+                .force('charge', d3.forceManyBody().strength(0))
                 .force('center', d3.forceCenter(500 / 2, 500 / 2));
 
             const link = svg.append('g')
