@@ -30,6 +30,12 @@ export class Graph<T> {
         });
     }
 
+    addEdgesFromData(data: Array<[T, T, number]>): void {
+        data.forEach(([originValue, destinationValue, weight]) => {
+            this.addEdge(originValue, destinationValue, weight);
+        });
+    }
+
     addEdge(originValue: T, destinationValue: T, weight: number = -1): void {
         this.ensureNode(originValue);
         this.ensureNode(destinationValue);
