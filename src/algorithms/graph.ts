@@ -20,6 +20,16 @@ export class Graph<T> {
         }
     }
 
+    addNode(value: T): void {
+        this.ensureNode(value);
+    }
+
+    addNodesFromData(data: T[]): void {
+        data.forEach((value) => {
+            this.ensureNode(value);
+        });
+    }
+
     addEdge(originValue: T, destinationValue: T, weight: number = -1): void {
         this.ensureNode(originValue);
         this.ensureNode(destinationValue);
