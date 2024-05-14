@@ -1,5 +1,5 @@
 import { Graph, Edge } from './graph';
-import { Point } from './point';
+import { Point, Node, GraphNode } from './point';
 
 export class D3Graph<T> {
     protected graph: Graph<T>;
@@ -39,3 +39,15 @@ export class D3GraphPoint extends D3Graph<Point> {
         }));
     }
 }
+
+export class D3GraphNode extends D3Graph<GraphNode> {
+    getNodes(): { id: string, x: number, y: number }[] {
+        // Generate nodes data for D3, using the x, y directly from Point
+        return this.graph.getNodes().map((point) => ({
+            id: this.graph.getHashFunction()(point),
+            x: point.x / 10,
+            y: point.y / 10
+        }));
+    }
+}
+

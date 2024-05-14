@@ -49,7 +49,7 @@ class GraphComponentBase<T> extends Component<GraphComponentBaseProps<T>> {
             .selectAll("circle")
             .data(nodes)
             .enter().append("circle")
-            .attr("r", 5);
+            .attr("r", 1);
 
         simulation.on("tick", () => {
             link
