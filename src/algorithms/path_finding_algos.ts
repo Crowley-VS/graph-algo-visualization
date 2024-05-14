@@ -1,8 +1,9 @@
 import { Graph } from "./graph";
 import { PriorityQueue } from "./priority_queue";
+import { StateReporter } from "./state_reporter";
 
 // Function to execute Dijkstra's algorithm
-export function dijkstra<T>(graph: Graph<T>, source: T, target: T): T[] {
+export function dijkstra<T>(graph: Graph<T>, source: T, target: T, reporter: StateReporter | null = null): T[] {
     const hasher = graph.getHashFunction();
     const distances = new Map<string, number>();
     const predecessors = new Map<string, T | null>();
@@ -20,6 +21,9 @@ export function dijkstra<T>(graph: Graph<T>, source: T, target: T): T[] {
 
     while (priorityQueue.length > 0) {
         const origin = priorityQueue.extractMin();
+        if (reporter) {
+            reporter.report({ type: 'visit', details: origin });
+        }
         if (!origin) break;
 
         const originHash = hasher(origin.value);
@@ -43,7 +47,7 @@ export function dijkstra<T>(graph: Graph<T>, source: T, target: T): T[] {
 }
 
 // Function for A* Search
-export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a: T, b: T) => number): T[] | null {
+export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a: T, b: T) => number, reporter: StateReporter | null = null): T[] | null {
     const hasher = graph.getHashFunction();
     const openSet = new PriorityQueue<T>(hasher);
     const cameFrom = new Map<string, T>();
@@ -66,6 +70,9 @@ export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a
 
     while (openSet.length > 0) {
         const current = openSet.extractMin()!.value;
+        if (reporter) {
+            reporter.report({ type: 'visit', details: current });
+        }
         const currentHash = hasher(current);
 
         if (currentHash === goalHash) {

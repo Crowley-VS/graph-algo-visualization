@@ -1,21 +1,20 @@
-import { Graph, Edge } from './graph';
-import { Point, Node, GraphNode } from './point';
+import { Graph } from './graph';
+import { GraphNode } from './point';
 
-export class D3Graph<T> {
-    protected graph: Graph<T>;
+export class D3Graph {
+    protected graph: Graph<GraphNode>;
 
-    constructor(graph: Graph<T>) {
+    constructor(graph: Graph<GraphNode>) {
         this.graph = graph;
     }
 
     getNodes(): { id: string, x: number, y: number }[] {
-        return this.graph.getNodes().map((node, index) => {
-            return {
-                id: this.graph.getHashFunction()(node),
-                x: 100 + index * 100, // Initial x position
-                y: 100 + index * 100  // Initial y position
-            };
-        });
+        // Generate nodes data for D3, using the x, y directly from Point
+        return this.graph.getNodes().map((point) => ({
+            id: this.graph.getHashFunction()(point),
+            x: point.x / 10,
+            y: point.y / 10
+        }));
     }
 
     getLinks(): { source: string, target: string, weight: number }[] {
@@ -28,26 +27,3 @@ export class D3Graph<T> {
         });
     }
 }
-
-export class D3GraphPoint extends D3Graph<Point> {
-    getNodes(): { id: string, x: number, y: number }[] {
-        // Generate nodes data for D3, using the x, y directly from Point
-        return this.graph.getNodes().map((point) => ({
-            id: this.graph.getHashFunction()(point),
-            x: point.x,
-            y: point.y
-        }));
-    }
-}
-
-export class D3GraphNode extends D3Graph<GraphNode> {
-    getNodes(): { id: string, x: number, y: number }[] {
-        // Generate nodes data for D3, using the x, y directly from Point
-        return this.graph.getNodes().map((point) => ({
-            id: this.graph.getHashFunction()(point),
-            x: point.x / 10,
-            y: point.y / 10
-        }));
-    }
-}
-

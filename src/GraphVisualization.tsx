@@ -1,27 +1,47 @@
 import React, { Component, RefObject } from 'react';
 import * as d3 from 'd3';
-import { D3GraphPoint, D3Graph } from './algorithms/graph_d3';
+import { D3Graph } from './algorithms/graph_d3';
+import { StateReport, StateReporter } from './algorithms/state_reporter';
+import { GraphNode } from './algorithms/point';
+import { dijkstra, aStarSearch } from './algorithms/path_finding_algos';
 
 
-interface GraphComponentBaseProps<T> {
+
+interface GraphComponentBaseProps {
     width: number;
     height: number;
-    graph: D3Graph<T>;
+    graph: D3Graph;
 }
 
-class GraphComponentBase<T> extends Component<GraphComponentBaseProps<T>> {
+export class GraphComponent extends Component<GraphComponentBaseProps> {
     private svgRef: RefObject<SVGSVGElement>;
+    private stateReporter: StateReporter;
 
-    constructor(props: GraphComponentBaseProps<T>) {
+    constructor(props: GraphComponentBaseProps) {
         super(props);
         this.svgRef = React.createRef<SVGSVGElement>();
+        this.stateReporter = new StateReporter();
     }
 
     componentDidMount() {
         this.initializeGraph();
+        this.stateReporter.subscribe(this.handleStateUpdate);
     }
 
-    componentDidUpdate(prevProps: GraphComponentBaseProps<T>) {
+    handleStateUpdate(state: StateReport) {
+        const svg = d3.select(this.svgRef.current);
+        switch (state.type) {
+            case 'visit':
+                svg.selectAll("circle")
+                    .filter((d: any) => d.id === state.details.node)
+                    .style("fill", "red"); // Change color on visit
+                break;
+            case 'path':
+                break;
+        }
+    }
+
+    componentDidUpdate(prevProps: GraphComponentBaseProps) {
         if (prevProps.graph !== this.props.graph) {
             this.initializeGraph();
         }
@@ -69,23 +89,12 @@ class GraphComponentBase<T> extends Component<GraphComponentBaseProps<T>> {
     }
 
     chargeStrength(): number {
-        return -30; // Default strength, can be overridden
+        return 0; // Default strength, can be overridden
     }
 
 
     render() {
         const { width, height } = this.props;
         return <svg ref={this.svgRef} width={width} height={height} />;
-    }
-}
-
-// Specific component implementations
-export class GraphComponent<T> extends GraphComponentBase<T> {
-    linkStrength() {
-        return 0;
-    }
-
-    chargeStrength() {
-        return 0;
     }
 }
