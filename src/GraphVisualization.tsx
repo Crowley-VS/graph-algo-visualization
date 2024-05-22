@@ -16,6 +16,7 @@ interface GraphComponentBaseProps {
 export class GraphComponent extends Component<GraphComponentBaseProps> {
     private svgRef: RefObject<SVGSVGElement>;
     private stateReporter: StateReporter;
+    private num: number = 0;
 
     constructor(props: GraphComponentBaseProps) {
         super(props);
@@ -28,22 +29,15 @@ export class GraphComponent extends Component<GraphComponentBaseProps> {
         this.stateReporter.subscribe(this.handleStateUpdate);
     }
 
-    handleStateUpdate(state: StateReport) {
+    handleStateUpdate = (state: StateReport) => {
         const svg = d3.select(this.svgRef.current);
         switch (state.type) {
             case 'visit':
-                svg.selectAll("circle")
-                    .filter((d: any) => d.id === state.details.node)
+                svg.select(`circle#node-${state.details.value.id}`) // Add this line
                     .style("fill", "red"); // Change color on visit
                 break;
             case 'path':
                 break;
-        }
-    }
-
-    componentDidUpdate(prevProps: GraphComponentBaseProps) {
-        if (prevProps.graph !== this.props.graph) {
-            this.initializeGraph();
         }
     }
 
@@ -53,10 +47,11 @@ export class GraphComponent extends Component<GraphComponentBaseProps> {
         svg.selectAll('*').remove();
         const links = graph.getLinks();
         const nodes = graph.getNodes();
+        let selectedNodesId: string[] = [];
+
 
         const simulation = d3.forceSimulation(nodes)
             .force('link', d3.forceLink(links).id((d: any) => d.id).strength(this.linkStrength()))
-            .force('charge', d3.forceManyBody().strength(this.chargeStrength()))
             .force('center', d3.forceCenter(width / 2, height / 2));
 
         const link = svg.append('g')
@@ -69,7 +64,28 @@ export class GraphComponent extends Component<GraphComponentBaseProps> {
             .selectAll("circle")
             .data(nodes)
             .enter().append("circle")
-            .attr("r", 1);
+            .attr("r", 3)
+            .on("click", (d) => { // Use an arrow function here
+                const temp = d;
+                const temp_id = d.target.__data__.id;
+                selectedNodesId.push(d.target.__data__.id);
+                if (selectedNodesId.length === 2) {
+                    const graph1 = graph.getGraph();
+                    if (graph1) {
+                        const startNode = graph.getNodeFromHash(selectedNodesId[0]);
+                        const endNode = graph.getNodeFromHash(selectedNodesId[1]);
+
+                        if (startNode && endNode) {
+                            //dijkstra(graph1, startNode, endNode, this.stateReporter);
+                            aStarSearch(graph1, startNode, endNode, GraphNode.distance, this.stateReporter);
+                        } else {
+                            // Handle the case where either startNode or endNode is undefined
+                            console.error('Either startNode or endNode is undefined');
+                        }
+                    }
+                    selectedNodesId = [];
+                }
+            });
 
         simulation.on("tick", () => {
             link
@@ -80,8 +96,11 @@ export class GraphComponent extends Component<GraphComponentBaseProps> {
 
             node
                 .attr("cx", (d: any) => d.x)
-                .attr("cy", (d: any) => d.y);
+                .attr("cy", (d: any) => d.y)
+                .attr("id", (d: any) => `node-${d.id}`);
         });
+
+
     }
 
     linkStrength(): number {
