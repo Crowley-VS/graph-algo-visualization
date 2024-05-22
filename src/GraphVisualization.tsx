@@ -13,28 +13,77 @@ interface GraphComponentBaseProps {
     graph: D3Graph;
 }
 
-export class GraphComponent extends Component<GraphComponentBaseProps> {
-    private svgRef: RefObject<SVGSVGElement>;
+interface GraphComponentBaseState {
+    selectedNodesId: string[];
+}
+
+export class GraphComponent extends Component<GraphComponentBaseProps, GraphComponentBaseState> {
+    private canvasRef: RefObject<HTMLCanvasElement>;
     private stateReporter: StateReporter;
     private num: number = 0;
 
     constructor(props: GraphComponentBaseProps) {
         super(props);
-        this.svgRef = React.createRef<SVGSVGElement>();
+        this.state = {
+            selectedNodesId: []
+        };
+        this.canvasRef = React.createRef<HTMLCanvasElement>();
         this.stateReporter = new StateReporter();
     }
 
     componentDidMount() {
         this.initializeGraph();
         this.stateReporter.subscribe(this.handleStateUpdate);
+        const canvas = this.canvasRef.current;
+        if (canvas) {
+            canvas.addEventListener('click', this.handleCanvasClick);
+        }
+    }
+
+    componentWillUnmount() {
+        const canvas = this.canvasRef.current;
+        if (canvas) {
+            canvas.removeEventListener('click', this.handleCanvasClick);
+        }
+    }
+
+    createQuadtree(nodes: { id: string; x: number; y: number; }[]): d3.Quadtree<{ id: string; x: number; y: number; }> {
+        return d3.quadtree<{ id: string; x: number; y: number; }>()
+            .x(d => d.x)
+            .y(d => d.y)
+            .addAll(nodes);
+    }
+
+
+    findClosestNode(
+        quadtree: d3.Quadtree<{ id: string; x: number; y: number; }>,
+        clickX: number,
+        clickY: number,
+        searchRadius: number = Infinity
+    ): { id: string; x: number; y: number; } | undefined {
+        let closestNode = quadtree.find(clickX, clickY, searchRadius);
+        return closestNode;
     }
 
     handleStateUpdate = (state: StateReport) => {
-        const svg = d3.select(this.svgRef.current);
+        const canvas = this.canvasRef.current;
+        if (!canvas) {
+            return;
+        }
+        const context = canvas.getContext('2d');
+        if (!context) {
+            return;
+        }
+
         switch (state.type) {
             case 'visit':
-                svg.select(`circle#node-${state.details.value.id}`) // Add this line
-                    .style("fill", "red"); // Change color on visit
+                context.fillStyle = "red";
+                context.beginPath();
+                let temp_x = state.details.value.x;
+                let temp_y = state.details.value.y;
+                context.moveTo(state.details.value.x, state.details.value.y);
+                context.arc(state.details.value.x, state.details.value.y, 3, 0, 2 * Math.PI);
+                context.fill();
                 break;
             case 'path':
                 break;
@@ -43,66 +92,84 @@ export class GraphComponent extends Component<GraphComponentBaseProps> {
 
     initializeGraph() {
         const { width, height, graph } = this.props;
-        const svg = d3.select(this.svgRef.current);
-        svg.selectAll('*').remove();
+        const canvas = this.canvasRef.current;
+        if (!canvas) {
+            return; // If canvas is null, exit the function
+        }
+        const context = canvas.getContext('2d'); // Get the context from the canvas
+        if (!context) {
+            return; // If canvas is null, exit the function
+        }
+
         const links = graph.getLinks();
         const nodes = graph.getNodes();
-        let selectedNodesId: string[] = [];
-
 
         const simulation = d3.forceSimulation(nodes)
             .force('link', d3.forceLink(links).id((d: any) => d.id).strength(this.linkStrength()))
             .force('center', d3.forceCenter(width / 2, height / 2));
 
-        const link = svg.append('g')
-            .selectAll("line")
-            .data(links)
-            .enter().append("line")
-            .style("stroke", "black");
+        simulation.on("tick", () => {
+            context.clearRect(0, 0, width, height); // Clear the canvas
 
-        const node = svg.append('g')
-            .selectAll("circle")
-            .data(nodes)
-            .enter().append("circle")
-            .attr("r", 3)
-            .on("click", (d) => { // Use an arrow function here
-                const temp = d;
-                const temp_id = d.target.__data__.id;
-                selectedNodesId.push(d.target.__data__.id);
-                if (selectedNodesId.length === 2) {
+            // Draw the links
+            context.beginPath();
+            links.forEach((d: any) => {
+                context.moveTo(d.source.x, d.source.y);
+                context.lineTo(d.target.x, d.target.y);
+            });
+            context.stroke();
+
+            // Draw the nodes
+            context.beginPath();
+            nodes.forEach((d: any) => {
+                let temp_x = d.x;
+                let temp_y = d.y;
+                context.moveTo(d.x, d.y);
+                context.arc(d.x, d.y, 3, 0, 2 * Math.PI);
+            });
+            context.fill();
+        });
+    }
+    handleCanvasClick = (event: MouseEvent) => {
+        const { graph } = this.props;
+        const canvas = this.canvasRef.current;
+        const nodes = graph.getNodes();
+
+        if (!canvas) {
+            return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const clickY = event.clientY - rect.top;
+
+        let quadtree = this.createQuadtree(nodes);
+        let closestNode = this.findClosestNode(quadtree, clickX, clickY);
+
+        if (closestNode) {
+            const temp_id = closestNode.id;
+            this.setState(prevState => ({
+                selectedNodesId: [...prevState.selectedNodesId, temp_id]
+            }), () => {
+                if (this.state.selectedNodesId.length === 2) {
                     const graph1 = graph.getGraph();
                     if (graph1) {
-                        const startNode = graph.getNodeFromHash(selectedNodesId[0]);
-                        const endNode = graph.getNodeFromHash(selectedNodesId[1]);
+                        const startNode = graph.getNodeFromHash(this.state.selectedNodesId[0]);
+                        const endNode = graph.getNodeFromHash(this.state.selectedNodesId[1]);
 
                         if (startNode && endNode) {
-                            //dijkstra(graph1, startNode, endNode, this.stateReporter);
                             aStarSearch(graph1, startNode, endNode, GraphNode.distance, this.stateReporter);
                         } else {
-                            // Handle the case where either startNode or endNode is undefined
                             console.error('Either startNode or endNode is undefined');
                         }
                     }
-                    selectedNodesId = [];
+                    this.setState({
+                        selectedNodesId: []
+                    });
                 }
             });
-
-        simulation.on("tick", () => {
-            link
-                .attr("x1", (d: any) => d.source.x)
-                .attr("y1", (d: any) => d.source.y)
-                .attr("x2", (d: any) => d.target.x)
-                .attr("y2", (d: any) => d.target.y);
-
-            node
-                .attr("cx", (d: any) => d.x)
-                .attr("cy", (d: any) => d.y)
-                .attr("id", (d: any) => `node-${d.id}`);
-        });
-
-
+        }
     }
-
     linkStrength(): number {
         return 0; // Default strength, can be overridden
     }
@@ -114,6 +181,6 @@ export class GraphComponent extends Component<GraphComponentBaseProps> {
 
     render() {
         const { width, height } = this.props;
-        return <svg ref={this.svgRef} width={width} height={height} />;
+        return <canvas ref={this.canvasRef} width={width} height={height} />; // Change this
     }
 }

@@ -34,7 +34,6 @@ export function dijkstra<T>(graph: Graph<T>, source: T, target: T, reporter: Sta
             const neighborHash = hasher(edge.destination);
             const weight = edge.weight;
             const distThroughOrigin = originDist + weight;
-
             if (distThroughOrigin < (distances.get(neighborHash) ?? Infinity)) {
                 distances.set(neighborHash, distThroughOrigin);
                 predecessors.set(neighborHash, origin.value);
@@ -69,9 +68,10 @@ export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a
     openSet.insert({ value: start, priority: fScore.get(startHash)! });
 
     while (openSet.length > 0) {
-        const current = openSet.extractMin()!.value;
+        const current_node = openSet.extractMin();
+        const current = current_node!.value;
         if (reporter) {
-            reporter.report({ type: 'visit', details: current });
+            reporter.report({ type: 'visit', details: current_node });
         }
         const currentHash = hasher(current);
 
