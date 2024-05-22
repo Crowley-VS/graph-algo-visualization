@@ -117,6 +117,10 @@ export class Graph<T> {
         });
         return edges;
     }
+
+    getNodeFromHash(hash: string): T | undefined {
+        return this.hashToNodeMap.get(hash);
+    }
 }
 
 export class Edge<T> {

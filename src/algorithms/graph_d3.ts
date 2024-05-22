@@ -26,4 +26,11 @@ export class D3Graph {
             };
         });
     }
+    getNodeFromHash(hash: string): GraphNode | undefined {
+        return this.graph.getNodeFromHash(hash);
+    }
+
+    getGraph(): Graph<GraphNode> {
+        return this.graph;
+    }
 }
