@@ -12,16 +12,16 @@ export class D3Graph {
         // Generate nodes data for D3, using the x, y directly from Point
         return this.graph.getNodes().map((point) => ({
             id: this.graph.getHashFunction()(point),
-            x: point.x / 10,
-            y: point.y / 10
+            x: point.x,
+            y: point.y
         }));
     }
 
-    getLinks(): { source: string, target: string, weight: number }[] {
+    getLinks(): { source: GraphNode, target: GraphNode, weight: number }[] {
         return this.graph.getEdges().map(edge => {
             return {
-                source: this.graph.getHashFunction()(edge.origin),
-                target: this.graph.getHashFunction()(edge.destination),
+                source: edge.origin,
+                target: edge.destination,
                 weight: edge.weight
             };
         });

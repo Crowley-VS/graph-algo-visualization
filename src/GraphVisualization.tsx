@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { D3Graph } from './algorithms/graph_d3';
 import { StateReport, StateReporter } from './algorithms/state_reporter';
 import { GraphNode } from './algorithms/point';
-import { dijkstra, aStarSearch } from './algorithms/path_finding_algos';
+import { dijkstra, aStarSearch, reconstructPath } from './algorithms/path_finding_algos';
 
 
 
@@ -79,13 +79,16 @@ export class GraphComponent extends Component<GraphComponentBaseProps, GraphComp
             case 'visit':
                 context.fillStyle = "red";
                 context.beginPath();
-                let temp_x = state.details.value.x;
-                let temp_y = state.details.value.y;
                 context.moveTo(state.details.value.x, state.details.value.y);
-                context.arc(state.details.value.x, state.details.value.y, 3, 0, 2 * Math.PI);
+                context.arc(state.details.value.x, state.details.value.y, 2, 0, 2 * Math.PI);
                 context.fill();
                 break;
             case 'path':
+                context.fillStyle = "green";
+                context.beginPath();
+                context.moveTo(state.details.x, state.details.y);
+                context.arc(state.details.x, state.details.y, 2, 0, 2 * Math.PI);
+                context.fill();
                 break;
         }
     }
@@ -98,38 +101,31 @@ export class GraphComponent extends Component<GraphComponentBaseProps, GraphComp
         }
         const context = canvas.getContext('2d'); // Get the context from the canvas
         if (!context) {
-            return; // If canvas is null, exit the function
+            return; // If context is null, exit the function
         }
 
-        const links = graph.getLinks();
-        const nodes = graph.getNodes();
+        const links = graph.getLinks(); // Presumed to already have source and target with x,y coordinates
+        const nodes = graph.getNodes(); // Presumed nodes array has x, y coordinates
 
-        const simulation = d3.forceSimulation(nodes)
-            .force('link', d3.forceLink(links).id((d: any) => d.id).strength(this.linkStrength()))
-            .force('center', d3.forceCenter(width / 2, height / 2));
+        context.clearRect(0, 0, width, height); // Clear the canvas
 
-        simulation.on("tick", () => {
-            context.clearRect(0, 0, width, height); // Clear the canvas
-
-            // Draw the links
-            context.beginPath();
-            links.forEach((d: any) => {
-                context.moveTo(d.source.x, d.source.y);
-                context.lineTo(d.target.x, d.target.y);
-            });
-            context.stroke();
-
-            // Draw the nodes
-            context.beginPath();
-            nodes.forEach((d: any) => {
-                let temp_x = d.x;
-                let temp_y = d.y;
-                context.moveTo(d.x, d.y);
-                context.arc(d.x, d.y, 3, 0, 2 * Math.PI);
-            });
-            context.fill();
+        // Draw the links
+        context.beginPath();
+        links.forEach((link) => {
+            context.moveTo(link.source.x, link.source.y);
+            context.lineTo(link.target.x, link.target.y);
         });
+        context.stroke(); // Apply the path drawings to the canvas
+
+        // Draw the nodes
+        context.beginPath();
+        nodes.forEach((node) => {
+            context.moveTo(node.x, node.y);
+            context.arc(node.x, node.y, 2, 0, 2 * Math.PI); // Draw circle for each node
+        });
+        context.fill(); // Fill the last path
     }
+
     handleCanvasClick = (event: MouseEvent) => {
         const { graph } = this.props;
         const canvas = this.canvasRef.current;
