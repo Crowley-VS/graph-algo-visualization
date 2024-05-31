@@ -28,7 +28,7 @@ function App() {
   return (
     <div className="App">
       <h1>Force Directed Graph</h1>
-      <GraphComponent graph={d3GraphPoint} width={800} height={600} />
+      <GraphComponent graph={d3GraphPoint} width={1000} height={1000} />
     </div>
   );
 }
