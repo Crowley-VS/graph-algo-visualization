@@ -44,9 +44,13 @@ export function dijkstra<T>(graph: Graph<T>, source: T, target: T, reporter: Sta
 
     return reconstructPath(predecessors, target, hasher);
 }
+// Function to add delay
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 // Function for A* Search
-export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a: T, b: T) => number, reporter: StateReporter | null = null): T[] | null {
+export async function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a: T, b: T) => number, reporter: StateReporter | null = null): Promise<T[] | null> {
     const hasher = graph.getHashFunction();
     const openSet = new PriorityQueue<T>(hasher);
     const cameFrom = new Map<string, T>();
@@ -67,7 +71,12 @@ export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a
 
     openSet.insert({ value: start, priority: fScore.get(startHash)! });
 
+    let counter = 0; // Add counter here
     while (openSet.length > 0) {
+        if (counter % 10 === 0) { // Only delay every 10 nodes
+            await delay(1); // Add delay here
+        }
+        counter++; // Increment counter here
         const current_node = openSet.extractMin();
         const current = current_node!.value;
         if (reporter) {
@@ -76,7 +85,7 @@ export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a
         const currentHash = hasher(current);
 
         if (currentHash === goalHash) {
-            return reconstructPath(cameFrom, current, hasher);
+            return reconstructPath(cameFrom, current, hasher, reporter);
         }
 
         graph.getOutgoingEdges(current).forEach(edge => {
@@ -96,11 +105,10 @@ export function aStarSearch<T>(graph: Graph<T>, start: T, goal: T, heuristic: (a
     return null;
 }
 
-export function reconstructPath<T>(predecessors: Map<string, T | null>, target: T, hasher: (value: T) => string): T[] {
+export function reconstructPath<T>(predecessors: Map<string, T | null>, target: T, hasher: (value: T) => string, reporter: StateReporter | null = null): T[] {
     const path: T[] = [];
     let current: T | null = target;
     let currentHash = hasher(current);
-
     // Check if the target was ever reached; if not, return an empty array
     if (!predecessors.has(currentHash)) {
         return path;
@@ -108,6 +116,10 @@ export function reconstructPath<T>(predecessors: Map<string, T | null>, target: 
 
     // Build the path by traversing the predecessors map
     while (current !== null) {
+        if (reporter) {
+            reporter.report({ type: 'path', details: current });
+        }
+
         path.push(current);
         current = predecessors.get(currentHash) || null;
         currentHash = current ? hasher(current) : '';
